@@ -15,8 +15,6 @@ func main() {
 	var val string
 	var ok bool
 
-	os.Setenv("ALLOWED_HOSTS", "example.com:22::www.example.com:22")
-
 	if val, ok = os.LookupEnv("ALLOWED_HOSTS"); !ok || val == "" {
 		log.Fatal("ALLOWED_HOSTS environment variable is not set")
 	} else {
