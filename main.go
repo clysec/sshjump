@@ -11,6 +11,14 @@ import (
 	"github.com/gliderlabs/ssh"
 )
 
+var debug = false
+
+func debugPrint(args ...interface{}) {
+	if debug {
+		fmt.Println(args...)
+	}
+}
+
 func main() {
 	var val string
 	var ok bool
@@ -19,6 +27,13 @@ func main() {
 		log.Fatal("ALLOWED_HOSTS environment variable is not set")
 	} else {
 		fmt.Println("Allowed hosts:", val)
+	}
+
+	if dbg, ok := os.LookupEnv("DEBUG"); ok && dbg == "true" {
+		fmt.Println("Debug mode is enabled")
+		debug = true
+	} else {
+		debug = false
 	}
 
 	var sshd_port string
@@ -39,14 +54,15 @@ func main() {
 				to = parts[1]
 			}
 		}
-
+		debugPrint("Mapping from:", from, "to:", to)
 		allowedHostsMap[from] = to
 	}
 
-	fmt.Println("Allowed hosts map:", allowedHostsMap)
+	debugPrint("Allowed hosts map:", allowedHostsMap)
 
 	ssh.Handle(func(s ssh.Session) {
 		subs := s.RawCommand()
+		debugPrint("Received command:", subs)
 
 		if subs != "" && !strings.Contains(subs, ":") {
 			subs = subs + ":22" // Default port if not specified
@@ -57,7 +73,9 @@ func main() {
 			return
 		}
 
-		client, err := net.Dial("tcp", subs)
+		debugPrint("Connecting to target host:", allowedHostsMap[subs])
+
+		client, err := net.Dial("tcp", allowedHostsMap[subs])
 		if err != nil {
 			io.WriteString(s, "Failed to connect to target\n")
 			return
@@ -75,6 +93,7 @@ func main() {
 
 		err = <-transport.ErrC
 		if err != nil {
+			debugPrint("Error during copy:", err)
 			io.WriteString(s, "Error during copy: "+err.Error()+"\n")
 			return
 		}
