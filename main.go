@@ -15,6 +15,8 @@ func main() {
 	var val string
 	var ok bool
 
+	os.Setenv("ALLOWED_HOSTS", "example.com:22::www.example.com:22")
+
 	if val, ok = os.LookupEnv("ALLOWED_HOSTS"); !ok || val == "" {
 		log.Fatal("ALLOWED_HOSTS environment variable is not set")
 	} else {
@@ -35,12 +37,15 @@ func main() {
 		if strings.Contains(from, "::") {
 			parts := strings.Split(from, "::")
 			if len(parts) == 2 {
-				to = parts[0] // Use the host part only
+				from = parts[0] // Use the host part only
+				to = parts[1]
 			}
 		}
 
 		allowedHostsMap[from] = to
 	}
+
+	fmt.Println("Allowed hosts map:", allowedHostsMap)
 
 	ssh.Handle(func(s ssh.Session) {
 		subs := s.RawCommand()
