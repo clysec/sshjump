@@ -6,7 +6,6 @@ import (
 	"log"
 	"net"
 	"os"
-	"slices"
 	"strings"
 
 	"github.com/gliderlabs/ssh"
@@ -29,10 +28,28 @@ func main() {
 	fmt.Println("Using SSHD_PORT:", sshd_port)
 
 	allowedHosts := strings.Split(val, ";")
+	allowedHostsMap := make(map[string]string)
+	for _, host := range allowedHosts {
+		from := strings.TrimSpace(host)
+		to := strings.TrimSpace(host)
+		if strings.Contains(from, "::") {
+			parts := strings.Split(from, "::")
+			if len(parts) == 2 {
+				to = parts[0] // Use the host part only
+			}
+		}
+
+		allowedHostsMap[from] = to
+	}
 
 	ssh.Handle(func(s ssh.Session) {
 		subs := s.RawCommand()
-		if subs == "" || !slices.Contains(allowedHosts, subs) {
+
+		if subs != "" && !strings.Contains(subs, ":") {
+			subs = subs + ":22" // Default port if not specified
+		}
+
+		if subs == "" || allowedHostsMap == nil || allowedHostsMap[subs] == "" {
 			io.WriteString(s, "Invalid or missing target host\n")
 			return
 		}
