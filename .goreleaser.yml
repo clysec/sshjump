@@ -1,0 +1,144 @@
+version: 2
+
+builds:
+  - main: .
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      # - darwin
+    goarch:
+      - amd64
+      - arm64
+    binary: sshjump
+
+  # - id: winbuild
+  #   main: .
+  #   env:
+  #     - CGO_ENABLED=0
+  #   goos:
+  #     - windows
+  #   goarch:
+  #     - amd64
+  #   binary: sshjump
+
+archives:
+  - format: tar.gz
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+
+    # format_overrides:
+    #   - goos: windows
+    #     format: zip
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+
+nfpms:
+  - id: sshjump
+    package_name: "sshjump"
+    description: "sshjump - Transparent SSH Jumphost"
+    vendor: "clysec"
+    maintainer: clysec <itsec@cloudyne.org>
+    file_name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}amd64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    formats:
+      - deb
+      - apk
+      - rpm
+    bindir: /usr/local/bin
+
+binary_signs:
+  - id: sshjump
+    ids:
+      - winbuild
+    cmd: signer
+    signature: "${artifact}"
+    args:
+      - pecoff
+      - ${artifact}
+
+dockers:
+  - id: sshjump-linux-amd64
+    use: docker
+    goos: linux
+    goarch: amd64
+    dockerfile: Dockerfile
+    image_templates:
+    - ghcr.io/clysec/sshjump:{{ .Tag }}-linux-amd64
+    - clysec/sshjump:{{ .Tag }}-linux-amd64
+  - id: sshjump-linux-arm64
+    use: docker
+    goos: linux
+    goarch: arm64
+    dockerfile: Dockerfile
+    image_templates:
+    - ghcr.io/clysec/sshjump:{{ .Tag }}-linux-arm64
+    - clysec/sshjump:{{ .Tag }}-linux-arm64
+
+docker_manifests:
+  - name_template: ghcr.io/clysec/sshjump:latest
+    image_templates:
+      - ghcr.io/clysec/sshjump:{{ .Tag }}-linux-amd64
+      - ghcr.io/clysec/sshjump:{{ .Tag }}-linux-arm64
+  
+  - name_template: ghcr.io/clysec/sshjump:{{ .Tag }}
+    image_templates:
+      - ghcr.io/clysec/sshjump:{{ .Tag }}-linux-amd64
+      - ghcr.io/clysec/sshjump:{{ .Tag }}-linux-arm64
+  
+  - name_template: clysec/sshjump:latest
+    image_templates:
+      - clysec/sshjump:{{ .Tag }}-linux-amd64
+      - clysec/sshjump:{{ .Tag }}-linux-arm64
+  
+  - name_template: clysec/sshjump:{{ .Tag }}
+    image_templates:
+      - clysec/sshjump:{{ .Tag }}-linux-amd64
+      - clysec/sshjump:{{ .Tag }}-linux-arm64
+release:
+  github:
+    owner: clysec
+    name: sshjump
+
+uploads:
+  - name: "debpkg"
+    method: "PUT"
+    exts:
+      - deb
+    mode: archive
+    username: "debian_upload"
+    target: https://git.cloudyne.io/api/packages/linux/debian/pool/all/main/upload
+    custom_artifact_name: true
+
+  - name: "apkpkg"
+    method: "PUT"
+    exts:
+      - apk
+    mode: archive
+    username: "debian_upload"
+    target: https://git.cloudyne.io/api/packages/linux/alpine/all/repository
+    custom_artifact_name: true
+
+  - name: "rpmpkg"
+    method: "PUT"
+    exts:
+      - rpm
+    mode: archive
+    username: "debian_upload"
+    target: https://git.cloudyne.io/api/packages/linux/rpm/upload
+    custom_artifact_name: true
