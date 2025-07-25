@@ -12,15 +12,15 @@ builds:
       - arm64
     binary: sshjump
 
-  - id: winbuild
-    main: .
-    env:
-      - CGO_ENABLED=0
-    goos:
-      - windows
-    goarch:
-      - amd64
-    binary: sshjump
+  # - id: winbuild
+  #   main: .
+  #   env:
+  #     - CGO_ENABLED=0
+  #   goos:
+  #     - windows
+  #   goarch:
+  #     - amd64
+  #   binary: sshjump
 
 archives:
   - format: tar.gz
@@ -32,9 +32,9 @@ archives:
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
 
-    format_overrides:
-      - goos: windows
-        format: zip
+    # format_overrides:
+    #   - goos: windows
+    #     format: zip
 
 changelog:
   sort: asc
